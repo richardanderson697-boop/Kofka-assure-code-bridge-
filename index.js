@@ -1,4 +1,3 @@
-
 async function startBridge() {
   const url = "https://spec-swiftly--richardanders21.replit.app/api/internal/workspaces";
   
@@ -9,15 +8,20 @@ async function startBridge() {
       method: "GET",
       headers: {
         "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (RailwayBridge/1.0)",
         "X-Internal-API-Key": process.env.Assure_Code_Key 
       }
     });
 
+    console.log(`Status Code: ${response.status} (${response.statusText})`);
+
     if (response.ok) {
       const data = await response.json();
-      console.log("🚀 Connection Success! Workspaces found:", data);
+      console.log("🚀 Connection Success!", data);
     } else {
-      console.error("⚠️ Connection Blocked. Replit returned an error.");
+      const errorText = await response.text();
+      console.error("⚠️ Replit rejected the request.");
+      console.log("Reason:", errorText.substring(0, 100));
     }
   } catch (error) {
     console.error("💥 Bridge Error:", error.message);
