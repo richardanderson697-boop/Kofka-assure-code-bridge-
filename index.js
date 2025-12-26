@@ -1,17 +1,18 @@
 
 const { Kafka } = require('kafkajs');
 
-// 1. Initialize Kafka Producer
-const kafka = new Kafka({
+// 1. Initialize const kafka = new Kafka({
   clientId: 'replit-to-kafka-bridge',
-  brokers: [process.env.KAFKA_BROKER], // e.g., 'your-broker:9092'
-  ssl: true,
+  brokers: [process.env.KAFKA_BROKER], 
+  ssl: false, // Change this to false for internal Railway networking
   sasl: {
     mechanism: 'plain',
     username: process.env.KAFKA_KEY,
     password: process.env.KAFKA_SECRET
   },
 });
+ Producer
+
 
 const producer = kafka.producer();
 
