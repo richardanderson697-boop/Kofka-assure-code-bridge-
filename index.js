@@ -1,18 +1,16 @@
-
 const { Kafka } = require('kafkajs');
 
-// 1. Initialize const kafka = new Kafka({
+// 1. Initialize Kafka Producer
+const kafka = new Kafka({
   clientId: 'replit-to-kafka-bridge',
   brokers: [process.env.KAFKA_BROKER], 
-  ssl: false, // Change this to false for internal Railway networking
+  ssl: false,
   sasl: {
     mechanism: 'plain',
     username: process.env.KAFKA_KEY,
     password: process.env.KAFKA_SECRET
   },
 });
- Producer
-
 
 const producer = kafka.producer();
 
@@ -37,9 +35,8 @@ async function startBridge() {
       const workspaceData = await response.json();
       console.log("✅ Data received from Replit");
 
-      // 2. Produce Message to Kafka
       await producer.send({
-        topic: 'workspace-specs', // Ensure this topic exists in your Kafka
+        topic: 'workspace-specs', 
         messages: [
           { 
             key: 'workspace-update', 
@@ -48,15 +45,12 @@ async function startBridge() {
         ],
       });
 
-      console.log("🚀 SUCCESS: Specs pushed to Kafka Go!");
+      console.log("🚀 SUCCESS: Specs pushed to Kafka!");
     } else {
       console.error(`❌ Replit Error: ${response.status} ${response.statusText}`);
     }
   } catch (error) {
     console.error("💥 Bridge Failure:", error.message);
-  } finally {
-    // Optional: Keep the bridge alive or disconnect
-    // await producer.disconnect(); 
   }
 }
 
