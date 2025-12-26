@@ -1,28 +1,28 @@
 
-// This 'async' wrapper fixes the "await" syntax error
 async function startBridge() {
   try {
+    // HEALTH CHECK: This will tell us if the variable is loading
+    console.log("Internal Check: ", process.env.Assure_Code_Key ? "✅ Key loaded from Railway" : "❌ Key NOT found in Railway Variables");
+
     const response = await fetch("https://assurecodes.com/api/internal/workspaces", {
       method: "GET",
       headers: {
-        "Accept": "application/json", // Explicitly ask for JSON
-        "X-Internal-API-Key": process.env.Assure_Co_Key // Matches your Railway Variable
+        "Accept": "application/json",
+        "X-Internal-API-Key": process.env.Assure_Code_Key // Must match Railway exactly
       }
     });
 
-    // Check if the response is JSON
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       const data = await response.json();
-      console.log("Connected! Frameworks found:", data);
+      console.log("🚀 Connection Success! Workspaces:", data);
     } else {
-      // If we got HTML (starts with '<'), log the first bit to see what it is
       const text = await response.text();
-      console.error("Expected JSON but got HTML. This often means a 404 or Auth error.");
-      console.log("Response starts with:", text.substring(0, 100));
+      console.error("⚠️ Connection Blocked. Received HTML instead of Data.");
+      console.log("First 50 chars of response:", text.substring(0, 50));
     }
   } catch (error) {
-    console.error("Bridge Connection Error:", error.message);
+    console.error("💥 Critical Bridge Error:", error.message);
   }
 }
 
