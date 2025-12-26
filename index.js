@@ -25,3 +25,11 @@ const run = async () => {
 };
 
 run().catch(console.error);
+// In your bridge's index.js
+const response = await fetch("https://assurecodes.com/api/internal/workspaces", {
+  method: "GET", // Or POST depending on the action
+  headers: {
+    "Content-Type": "application/json",
+    "X-Internal-API-Key": process.env.Assure_Co... // Pulls your key from Railway Variables
+  }
+});
