@@ -1,0 +1,13 @@
+{
+  "name": "assure-code-bridge",
+  "version": "1.0.0",
+  "description": "24/7 Kafka to Vercel Bridge",
+  "main": "index.js",
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "axios": "^1.6.0"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}
