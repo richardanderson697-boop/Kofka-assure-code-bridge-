@@ -1,27 +1,28 @@
-// This wrapper function tells Node.js to allow 'await'
-async function syncWithReplit() {
+// This 'async' wrapper fixes the "await" syntax error
+async function startBridge() {
   try {
-    console.log("Attempting to connect to Assure Code...");
-
     const response = await fetch("https://assurecodes.com/api/internal/workspaces", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        // This pulls the key you just added to Railway Variables
-        "X-Internal-API-Key": process.env.Assure_Co_Key 
+        "X-Internal-API-Key": process.env.Assure_Co_Key // Ensure this name matches Railway!
       }
     });
 
-    if (response.ok) {
+    // Check if the response is actually JSON before parsing
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
       const data = await response.json();
-      console.log("Handshake Successful! Data received:", data);
+      console.log("Connected! Frameworks found:", data);
     } else {
-      console.error("Handshake Failed. Status:", response.status);
+      // This part captures the HTML if you get the "Unexpected token <" error again
+      const text = await response.text();
+      console.error("Expected JSON but got HTML. This usually means a 404 or Login page.");
+      console.log("Server response begins with:", text.substring(0, 100));
     }
   } catch (error) {
-    console.error("Connection Error:", error.message);
+    console.error("Bridge Connection Error:", error.message);
   }
 }
 
-// This line actually starts the process
-syncWithReplit();
+startBridge();
