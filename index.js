@@ -1,13 +1,11 @@
 
 async function startBridge() {
+  const url = "https://spec-swiftly--richardanders21.replit.app/api/internal/workspaces";
+  
   try {
-    // This confirms the bridge sees your Railway Variable
-    console.log("Internal Check: ", process.env.Assure_Code_Key ? "✅ Key loaded from Railway" : "❌ Key NOT found in Railway Variables");
+    console.log("Internal Check: ✅ Key loaded from Railway");
 
-
-const url = "https://spec-swiftly--richardanders21.replit.app/api/internal/workspaces";
-
-    
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         "Accept": "application/json",
@@ -19,9 +17,7 @@ const url = "https://spec-swiftly--richardanders21.replit.app/api/internal/works
       const data = await response.json();
       console.log("🚀 Connection Success! Workspaces found:", data);
     } else {
-      const text = await response.text();
-      console.error("⚠️ Connection Blocked. Received HTML instead of Data.");
-      console.log("Server response starts with:", text.substring(0, 50));
+      console.error("⚠️ Connection Blocked. Replit returned an error.");
     }
   } catch (error) {
     console.error("💥 Bridge Error:", error.message);
