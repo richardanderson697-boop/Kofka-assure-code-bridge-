@@ -4,7 +4,9 @@ async function startBridge() {
     // This confirms the bridge sees your Railway Variable
     console.log("Internal Check: ", process.env.Assure_Code_Key ? "✅ Key loaded from Railway" : "❌ Key NOT found in Railway Variables");
 
-    const response = await fetch("https://spec-swiftly--richardanders21.rpl.co/api/internal/workspaces", {
+const response = await fetch("https://spec-swiftly--richardanders21.repl.co/api/internal/workspaces", {
+
+    
       method: "GET",
       headers: {
         "Accept": "application/json",
