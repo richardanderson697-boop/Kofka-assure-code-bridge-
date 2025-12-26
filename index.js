@@ -1,28 +1,61 @@
 
+const { Kafka } = require('kafkajs');
+
+// 1. Initialize Kafka Producer
+const kafka = new Kafka({
+  clientId: 'replit-to-kafka-bridge',
+  brokers: [process.env.KAFKA_BROKER], // e.g., 'your-broker:9092'
+  ssl: true,
+  sasl: {
+    mechanism: 'plain',
+    username: process.env.KAFKA_KEY,
+    password: process.env.KAFKA_SECRET
+  },
+});
+
+const producer = kafka.producer();
+
 async function startBridge() {
-  const domain = "https://spec-swiftly--richardanders21.replit.app";
-  // Try changing this to "/" just to see the connection go GREEN
-  const path = "/api/internal/workspaces"; 
+  const replitUrl = "https://spec-swiftly--richardanders21.replit.app/api/internal/workspaces";
   
   try {
-    console.log(`📡 Connecting to: ${domain}${path}`);
+    console.log("Connecting to Kafka...");
+    await producer.connect();
+    console.log("✅ Kafka Connected");
 
-    const response = await fetch(`${domain}${path}`, {
+    console.log("Fetching specs from Replit...");
+    const response = await fetch(replitUrl, {
       method: "GET",
       headers: {
+        "Accept": "application/json",
         "X-Internal-API-Key": process.env.Assure_Code_Key 
       }
     });
 
-    console.log(`Status: ${response.status} ${response.statusText}`);
+    if (response.ok) {
+      const workspaceData = await response.json();
+      console.log("✅ Data received from Replit");
 
-    if (response.status === 200) {
-      console.log("🚀 SUCCESS! The Bridge is officially Open.");
-    } else if (response.status === 404) {
-      console.log("❌ Connection worked, but the PATH is wrong. Check your Replit code.");
+      // 2. Produce Message to Kafka
+      await producer.send({
+        topic: 'workspace-specs', // Ensure this topic exists in your Kafka
+        messages: [
+          { 
+            key: 'workspace-update', 
+            value: JSON.stringify(workspaceData) 
+          }
+        ],
+      });
+
+      console.log("🚀 SUCCESS: Specs pushed to Kafka Go!");
+    } else {
+      console.error(`❌ Replit Error: ${response.status} ${response.statusText}`);
     }
   } catch (error) {
-    console.error("💥 Network Error:", error.message);
+    console.error("💥 Bridge Failure:", error.message);
+  } finally {
+    // Optional: Keep the bridge alive or disconnect
+    // await producer.disconnect(); 
   }
 }
 
