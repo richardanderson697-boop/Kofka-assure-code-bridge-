@@ -1,5 +1,5 @@
 
-Const { Kafka } = require('kafkajs');
+const { Kafka } = require('kafkajs');
 
 // Initialize Kafka with both Consumer and Producer
 const kafka = new Kafka({
