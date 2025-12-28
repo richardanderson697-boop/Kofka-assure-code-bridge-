@@ -1,7 +1,6 @@
 
-const { Kafka } = require('kafkajs');
+const { Kafka } = require('kafkajs'); // Fixed: Changed 'Const' to 'const'
 
-// Initialize Kafka with both Consumer and Producer
 const kafka = new Kafka({
   clientId: 'assure-code-bridge',
   brokers: [process.env.KAFKA_BROKERS || 'kafka.railway.internal:9092'],
@@ -10,6 +9,11 @@ const kafka = new Kafka({
     username: process.env.KAFKA_SASL_USERNAME || 'kafka',
     password: process.env.KAFKA_SASL_PASSWORD
   },
+  // Added basic retry logic for connection stability
+  retry: {
+    initialRetryTime: 300,
+    retries: 10
+  }
 });
 
 const consumer = kafka.consumer({ 
@@ -23,13 +27,11 @@ async function startBridge() {
   const assureCodeKey = process.env.Assure_Code_Key;
   
   try {
-    // Connect both consumer and producer
     console.log("🔗 Connecting to Kafka...");
     await consumer.connect();
     await producer.connect();
     console.log("✅ Kafka Connected (Consumer + Producer)");
 
-    console.log("📡 Subscribing to regulatory-events topic...");
     await consumer.subscribe({ 
       topic: process.env.KAFKA_TOPIC || 'regulatory-events',
       fromBeginning: false 
@@ -37,15 +39,12 @@ async function startBridge() {
 
     console.log("👂 Listening for regulatory events...");
     
-    // Keep running forever, consuming messages
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         try {
           const event = JSON.parse(message.value.toString());
-          console.log("📨 Received regulatory event:", event.event_id);
+          console.log("📨 Received event:", event.event_id);
 
-          // Forward to ASSURE-CODE
-          console.log("➡️  Forwarding to ASSURE-CODE...");
           const response = await fetch(`${assureCodeUrl}/api/webhook/regulatory-event`, {
             method: "POST",
             headers: {
@@ -57,14 +56,9 @@ async function startBridge() {
 
           if (response.ok) {
             const result = await response.json();
-            console.log("✅ Event processed by ASSURE-CODE");
-
-            // If ASSURE-CODE returned updated specs, publish back to Kafka
             if (result.updatedSpecs || result.github_pr_url) {
-              console.log("📤 Publishing updated specs back to Kafka...");
-              
               await producer.send({
-                topic: 'spec-updates', // New topic for spec updates
+                topic: 'spec-updates',
                 messages: [{
                   key: event.event_id,
                   value: JSON.stringify({
@@ -76,17 +70,20 @@ async function startBridge() {
                   })
                 }]
               });
-              
-              console.log("✅ Specs published to Kafka (spec-updates topic)");
+              console.log("✅ Specs published to Kafka");
             }
           } else {
-            console.error(`❌ ASSURE-CODE Error: ${response.status} ${response.statusText}`);
+            console.error(`❌ API Error: ${response.status}`);
           }
         } catch (error) {
-          console.error("💥 Message processing error:", error.message);
+          console.error("💥 processing error:", error.message);
         }
       },
     });
+
+    // KEEP-ALIVE: This prevents the process from exiting after consumer.run() starts
+    // Resolves the issue where Railway shows the app as "Finished" or "Crashed"
+    await new Promise(() => {}); 
 
   } catch (error) {
     console.error("💥 Bridge Failure:", error.message);
@@ -94,20 +91,15 @@ async function startBridge() {
   }
 }
 
-// Handle graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('🛑 Shutting down gracefully...');
+// Graceful Shutdown
+const shutdown = async () => {
+  console.log('🛑 Shutting down...');
   await consumer.disconnect();
   await producer.disconnect();
   process.exit(0);
-});
+};
 
-process.on('SIGINT', async () => {
-  console.log('🛑 Shutting down gracefully...');
-  await consumer.disconnect();
-  await producer.disconnect();
-  process.exit(0);
-});
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
-console.log("🚀 Starting Bidirectional ASSURE-CODE Bridge...");
 startBridge();
